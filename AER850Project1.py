@@ -11,4 +11,5 @@ import matplotlib.pyplot as plt
 data=pd.read_csv("Project 1 Data.csv")
 #print(data.head())
 #data['X'].hist() #plots histogram of column x in data
-type(data)
+
+#2.3 Data Visualization
