@@ -1,5 +1,4 @@
 #Name: Amir Akram
-#Student Number: 501109393
 #Title: AER850 Project 1
 
 #Basic Imports
