@@ -7,7 +7,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-#Read Data
+#2.1 Data Processing
 data=pd.read_csv("Project 1 Data.csv")
 #print(data.head())
-data['X'].hist()
+#data['X'].hist() #plots histogram of column x in data
+type(data)
