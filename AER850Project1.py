@@ -67,8 +67,6 @@ plt.title("Correlation Between Features (X, Y, Z) and Step")
 
 
 
-
-
 """2.4 Classification Model Development/Engineering"""
 
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
@@ -77,7 +75,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
-from sklearn.model_selection import RandomizedSearchCV
 
 # ---------- Model 1: Logistic Regression (GridSearchCV)
 pipe_lr = Pipeline([
@@ -86,7 +83,7 @@ pipe_lr = Pipeline([
 ])
 
 param_grid_lr = {
-    "lr__C": [0.01, 0.1, 1, 10],
+    "lr__C": [0.01, 0.1, 1, 10, 100],
     "lr__solver": ["lbfgs", "newton-cg", "saga"],
     "lr__penalty": [None,"l2"],
 }
@@ -97,19 +94,18 @@ best_lr = grid_lr.best_estimator_
 
 print("=== Logistic Regression (GridSearchCV) ===")
 print("Best params:", grid_lr.best_params_)
-print(f"Best CV mean accuracy: {grid_lr.best_score_:.4f}\n")
 
 
 # ---------- Model 2: Random Forest (GridSearchCV)
 rf = RandomForestClassifier(random_state=42)
 
 param_grid_rf = {
-    'n_estimators': [5, 10, 30, 50],
-     'max_depth': [None, 5, 15, 45],
-     'min_samples_split': [2, 5, 10],
-     'min_samples_leaf': [1, 2, 4, 6],
-     'max_features': [None,0.1,'sqrt', 'log2', 1, 2, 3],
-     'criterion': ['gini', 'entropy']         
+    'n_estimators': [50, 100, 200],
+    'max_depth': [None, 10, 20, 30],
+    'min_samples_split': [2, 5, 10],
+    'min_samples_leaf': [2, 4, 6],
+    'max_features': ['sqrt', 'log2'],
+    'criterion': ['gini', 'entropy']         
 }
 grid_rf = GridSearchCV(rf, param_grid_rf, cv=5, scoring="f1_weighted", n_jobs=-1)
 
@@ -117,8 +113,6 @@ grid_rf.fit(coord_train, target_train)
 best_rf = grid_rf.best_estimator_   
 print("=== Random Forest (GridSearchCV) ===")
 print("Best params:", grid_rf.best_params_)  
-print(f"Best CV mean F1 (weighted): {grid_rf.best_score_:.4f}\n")
-
 
 
 
@@ -129,9 +123,9 @@ pipe_svm = Pipeline([
 ])
 
 param_grid_svm = {
-    "svm__kernel": ["linear", "rbf", "poly"],
-    "svm__C": [0.001,0.01,0.1, 1, 10],
-    "svm__gamma": ['scale','auto',10,100],             
+    "svm__kernel": ["rbf","sigmoid","poly"],
+    "svm__C": [0.1, 1, 10, 100],
+    "svm__gamma": ['scale','auto'],             
 }
 
 grid_svm = GridSearchCV(pipe_svm, param_grid_svm, cv=5, scoring="f1_weighted", n_jobs=-1,)
@@ -141,33 +135,29 @@ best_svm = grid_svm.best_estimator_
 
 print("=== SVM (GridSearchCV) ===")
 print("Best params:", grid_svm.best_params_)
-print(f"Best CV mean F1 (weighted): {grid_svm.best_score_:.4f}\n")
 
 
 
 
 
-# ---------- Model 4: Random Forest (RandomizedSearchCV)
+# ---------- Model 4: Decision Tree (RandomizedSearchCV)
+from sklearn.tree import DecisionTreeClassifier
+dt = DecisionTreeClassifier(random_state=42)
 
-rf2 = RandomForestClassifier(random_state=42)
-
-param_grid_rf2 = {
-    'n_estimators': [5, 10, 15, 20, 25, 30, 50],
-      'max_depth': [None, 5,10, 15, 25, 45],
-      'min_samples_split': [2, 5, 10, 15],
-      'min_samples_leaf': [1, 2, 4, 6, 12],
-      'max_features': [None,0.1,'sqrt', 'log2', 1, 2, 3],
-      'criterion': ['gini', 'entropy']
+param_grid_dt = {
+     'max_depth': [None, 10, 20, 30],
+     'min_samples_split': [2, 5, 10],
+     'min_samples_leaf': [1, 2, 4],
+     'max_features': ['sqrt', 'log2']
   }
 
-grid_rf2 = RandomizedSearchCV(rf2, param_grid_rf2, cv=5, scoring="f1_weighted", n_jobs=-1)
+grid_dt = RandomizedSearchCV(dt, param_grid_dt, cv=5, scoring="f1_weighted", n_jobs=-1)
 
-grid_rf2.fit(coord_train, target_train)
-best_rf2 = grid_rf2.best_estimator_
+grid_dt.fit(coord_train, target_train)
+best_dt = grid_dt.best_estimator_
 
-print("=== Random Forest (RandomizedSearchCV) ===")
-print("Best params:", grid_rf2.best_params_)
-print(f"Best CV mean F1 (weighted): {grid_rf2.best_score_:.4f}\n")
+print("=== Decision Tree (RandomizedSearchCV) ===")
+print("Best params:", grid_dt.best_params_)
 
 
 
@@ -183,7 +173,7 @@ models = {
     "Logistic Regression": best_lr,
     "SVM": best_svm,
     "Random Forest (GridSearchCV)": best_rf,
-    "Random Forest (RandomizedSearchCV)": best_rf2
+    "Decision Tree (RandomizedSearchCV)": best_dt
 }
 
 # Evaluate each model
@@ -219,7 +209,7 @@ from sklearn.ensemble import StackingClassifier
 # Combine two strong base models (you can adjust these)
 estimators = [
     ("svm", best_svm),
-    ("rf2", best_rf2)
+    ("rf", best_rf)
 ]
 
 # Meta-model: Logistic Regression learns from their outputs
