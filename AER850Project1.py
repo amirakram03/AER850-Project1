@@ -21,14 +21,13 @@ from sklearn.model_selection import train_test_split
 coord=df[['X','Y','Z']] #features
 target=df['Step']; #Labels
 
-coord_train, coord_test, target_train, target_test = train_test_split(coord,target,random_state = 74, test_size = 0.2,stratify=target);
+coord_train, coord_test, target_train, target_test = train_test_split(coord,target,random_state = 42, test_size = 0.2,stratify=target);
 
 
 """2.2 Data Visualization"""
 
 #3D Scatter Plot
 from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 
 fig = plt.figure(figsize=(8,6))
@@ -64,6 +63,12 @@ corr_matrix = train_df.corr(method='pearson') # Compute Pearson correlation matr
 sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f", cbar=True) # Plot the correlation heatmap
 plt.title("Correlation Between Features (X, Y, Z) and Step")
 
+
+
+
+
+
+
 """2.4 Classification Model Development/Engineering"""
 
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
@@ -77,13 +82,13 @@ from sklearn.model_selection import RandomizedSearchCV
 # ---------- Model 1: Logistic Regression (GridSearchCV)
 pipe_lr = Pipeline([
     ("scaler", StandardScaler()),
-    ("lr", LogisticRegression(max_iter=1000, random_state=74))
+    ("lr", LogisticRegression(max_iter=1000, random_state=42))
 ])
 
 param_grid_lr = {
     "lr__C": [0.01, 0.1, 1, 10],
     "lr__solver": ["lbfgs", "newton-cg", "saga"],
-    "lr__penalty": ["none","l2"],
+    "lr__penalty": [None,"l2"],
 }
 
 grid_lr = GridSearchCV(pipe_lr,param_grid_lr, cv=5, scoring="f1_weighted", n_jobs=-1)
@@ -96,7 +101,7 @@ print(f"Best CV mean accuracy: {grid_lr.best_score_:.4f}\n")
 
 
 # ---------- Model 2: Random Forest (GridSearchCV)
-rf = RandomForestClassifier(random_state=74)
+rf = RandomForestClassifier(random_state=42)
 
 param_grid_rf = {
     'n_estimators': [5, 10, 30, 50],
@@ -120,7 +125,7 @@ print(f"Best CV mean F1 (weighted): {grid_rf.best_score_:.4f}\n")
 # ---------- Model 3: Support Vector Machine (GridSearchCV)
 pipe_svm = Pipeline([
     ("scaler", StandardScaler()),
-    ("svm", SVC(random_state=74))
+    ("svm", SVC(random_state=42))
 ])
 
 param_grid_svm = {
@@ -144,7 +149,7 @@ print(f"Best CV mean F1 (weighted): {grid_svm.best_score_:.4f}\n")
 
 # ---------- Model 4: Random Forest (RandomizedSearchCV)
 
-rf2 = RandomForestClassifier(random_state=74)
+rf2 = RandomForestClassifier(random_state=42)
 
 param_grid_rf2 = {
     'n_estimators': [5, 10, 15, 20, 25, 30, 50],
@@ -163,6 +168,125 @@ best_rf2 = grid_rf2.best_estimator_
 print("=== Random Forest (RandomizedSearchCV) ===")
 print("Best params:", grid_rf2.best_params_)
 print(f"Best CV mean F1 (weighted): {grid_rf2.best_score_:.4f}\n")
+
+
+
+
+
+
+"""2.5 Model Performance Analysis"""
+# ---------- Step 5: Model Performance Analysis ----------
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay
+
+# List of all trained models
+models = {
+    "Logistic Regression": best_lr,
+    "SVM": best_svm,
+    "Random Forest (GridSearchCV)": best_rf,
+    "Random Forest (RandomizedSearchCV)": best_rf2
+}
+
+# Evaluate each model
+results = []
+
+for name, model in models.items():
+    y_pred = model.predict(coord_test)
+    
+    acc = accuracy_score(target_test, y_pred)
+    prec = precision_score(target_test, y_pred, average='weighted')
+    rec = recall_score(target_test, y_pred, average='weighted')
+    f1 = f1_score(target_test, y_pred, average='weighted')
+    
+    results.append([name, acc, prec, rec, f1])
+    
+    # Confusion Matrix
+    cm = confusion_matrix(target_test, y_pred)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+    disp.plot(cmap='Blues', xticks_rotation=45)
+    plt.title(f"Confusion Matrix - {name}")
+    plt.show()
+
+results_df = pd.DataFrame(results, columns=["Model", "Accuracy", "Precision", "Recall", "F1-Score"])
+print("\n=== Model Performance Summary ===")
+print(results_df)
+
+
+
+
+
+"""2.6 Stacked Model Performance Analysis"""
+from sklearn.ensemble import StackingClassifier
+# Combine two strong base models (you can adjust these)
+estimators = [
+    ("svm", best_svm),
+    ("rf2", best_rf2)
+]
+
+# Meta-model: Logistic Regression learns from their outputs
+stacked_model = StackingClassifier(estimators, LogisticRegression(max_iter=1000, random_state=42), cv=5,n_jobs=-1)
+
+# Train the stacked model
+stacked_model.fit(coord_train, target_train)
+
+# Predict on the test set
+y_pred_stack = stacked_model.predict(coord_test)
+
+# Evaluate
+acc = accuracy_score(target_test, y_pred_stack)
+prec = precision_score(target_test, y_pred_stack, average="weighted")
+rec = recall_score(target_test, y_pred_stack, average="weighted")
+f1 = f1_score(target_test, y_pred_stack, average="weighted")
+
+print("=== Stacked Model Performance ===")
+print(f"Accuracy:  {acc:.4f}")
+print(f"Precision: {prec:.4f}")
+print(f"Recall:    {rec:.4f}")
+print(f"F1-score:  {f1:.4f}\n")
+
+# Confusion matrix visualization
+cm = confusion_matrix(target_test, y_pred_stack)
+ConfusionMatrixDisplay(confusion_matrix=cm).plot(cmap="Blues")
+plt.title("Confusion Matrix – Stacked Model")
+plt.tight_layout()
+plt.show()
+
+
+
+
+
+"""2.7 Model Evaluation"""
+import joblib
+
+joblib.dump(stacked_model, "stacked_model.joblib")
+print("Model saved as stacked_model.joblib")
+
+loaded_model = joblib.load("stacked_model.joblib")
+new_points = np.array([
+    [9.375, 3.0625, 1.51],
+    [6.995, 5.125, 0.3875],
+    [0, 3.0625, 1.93],
+    [9.4, 3, 1.8],
+    [9.4, 3, 1.3]
+])
+predicted_steps = loaded_model.predict(new_points)
+print("Predicted maintenance steps:", predicted_steps)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
