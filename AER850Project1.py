@@ -21,7 +21,7 @@ from sklearn.model_selection import train_test_split
 coord=df[['X','Y','Z']] #features
 target=df['Step']; #Labels
 
-coord_train, coord_test, target_train, target_test = train_test_split(coord,target,random_state = 42, test_size = 0.2,stratify=target);
+coord_train, coord_test, target_train, target_test = train_test_split(coord,target,random_state = 74, test_size = 0.2,stratify=target);
 
 
 """2.2 Data Visualization"""
@@ -65,6 +65,125 @@ sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f", cbar=True) # Pl
 plt.title("Correlation Between Features (X, Y, Z) and Step")
 
 """2.4 Classification Model Development/Engineering"""
+
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.model_selection import RandomizedSearchCV
+
+# ---------- Model 1: Logistic Regression (GridSearchCV)
+pipe_lr = Pipeline([
+    ("scaler", StandardScaler()),
+    ("lr", LogisticRegression(max_iter=1000, random_state=74))
+])
+
+param_grid_lr = {
+    "lr__C": [0.01, 0.1, 1, 10],
+    "lr__solver": ["lbfgs", "newton-cg", "saga"],
+    "lr__penalty": ["none","l2"],
+}
+
+grid_lr = GridSearchCV(pipe_lr,param_grid_lr, cv=5, scoring="f1_weighted", n_jobs=-1)
+grid_lr.fit(coord_train, target_train)
+best_lr = grid_lr.best_estimator_
+
+print("=== Logistic Regression (GridSearchCV) ===")
+print("Best params:", grid_lr.best_params_)
+print(f"Best CV mean accuracy: {grid_lr.best_score_:.4f}\n")
+
+
+# ---------- Model 2: Random Forest (GridSearchCV)
+rf = RandomForestClassifier(random_state=74)
+
+param_grid_rf = {
+    'n_estimators': [5, 10, 30, 50],
+     'max_depth': [None, 5, 15, 45],
+     'min_samples_split': [2, 5, 10],
+     'min_samples_leaf': [1, 2, 4, 6],
+     'max_features': [None,0.1,'sqrt', 'log2', 1, 2, 3],
+     'criterion': ['gini', 'entropy']         
+}
+grid_rf = GridSearchCV(rf, param_grid_rf, cv=5, scoring="f1_weighted", n_jobs=-1)
+
+grid_rf.fit(coord_train, target_train)
+best_rf = grid_rf.best_estimator_   
+print("=== Random Forest (GridSearchCV) ===")
+print("Best params:", grid_rf.best_params_)  
+print(f"Best CV mean F1 (weighted): {grid_rf.best_score_:.4f}\n")
+
+
+
+
+# ---------- Model 3: Support Vector Machine (GridSearchCV)
+pipe_svm = Pipeline([
+    ("scaler", StandardScaler()),
+    ("svm", SVC(random_state=74))
+])
+
+param_grid_svm = {
+    "svm__kernel": ["linear", "rbf", "poly"],
+    "svm__C": [0.001,0.01,0.1, 1, 10],
+    "svm__gamma": ['scale','auto',10,100],             
+}
+
+grid_svm = GridSearchCV(pipe_svm, param_grid_svm, cv=5, scoring="f1_weighted", n_jobs=-1,)
+
+grid_svm.fit(coord_train, target_train)
+best_svm = grid_svm.best_estimator_
+
+print("=== SVM (GridSearchCV) ===")
+print("Best params:", grid_svm.best_params_)
+print(f"Best CV mean F1 (weighted): {grid_svm.best_score_:.4f}\n")
+
+
+
+
+
+# ---------- Model 4: Random Forest (RandomizedSearchCV)
+
+rf2 = RandomForestClassifier(random_state=74)
+
+param_grid_rf2 = {
+    'n_estimators': [5, 10, 15, 20, 25, 30, 50],
+      'max_depth': [None, 5,10, 15, 25, 45],
+      'min_samples_split': [2, 5, 10, 15],
+      'min_samples_leaf': [1, 2, 4, 6, 12],
+      'max_features': [None,0.1,'sqrt', 'log2', 1, 2, 3],
+      'criterion': ['gini', 'entropy']
+  }
+
+grid_rf2 = RandomizedSearchCV(rf2, param_grid_rf2, cv=5, scoring="f1_weighted", n_jobs=-1)
+
+grid_rf2.fit(coord_train, target_train)
+best_rf2 = grid_rf2.best_estimator_
+
+print("=== Random Forest (RandomizedSearchCV) ===")
+print("Best params:", grid_rf2.best_params_)
+print(f"Best CV mean F1 (weighted): {grid_rf2.best_score_:.4f}\n")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
