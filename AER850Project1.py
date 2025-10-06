@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 
 """2.1 Data Processing"""
 df=pd.read_csv("Project 1 Data.csv")
-# print(df.info())
-# print(df.head())
-#print(df.describe())
+
+print(df.head())
+print(df.describe())
 
 #Splitting the data set into train and test using the 80-20 split convention and stratifying the samples
 #This is done before dta visualization to avoid data snooping bias
@@ -272,7 +272,7 @@ predicted_steps = loaded_model.predict(new_points)
 print("Predicted maintenance steps:", predicted_steps)
 
 
-
+  
 
 
 
