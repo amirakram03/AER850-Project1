@@ -1,5 +1,4 @@
-Project Title:
-Maintenance Step Prediction Using Coordinate-Based Machine Learning
+# **Maintenance Step Prediction Using Coordinate-Based Machine Learning**
 
 Overview:
 This project explores the use of supervised machine learning to predict aircraft maintenance
